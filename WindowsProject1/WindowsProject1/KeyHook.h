@@ -19,3 +19,7 @@ BOOL EndHook();
 VOID SetStr();
 LPCWSTR GetStr();
 LPCWSTR GetStrr(std::string);
+VOID MyDrawText(HDC, std::string, LPRECT, UINT);
+int GetCallbackCnt();
+
+

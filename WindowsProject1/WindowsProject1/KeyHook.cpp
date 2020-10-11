@@ -54,17 +54,19 @@ VOID SetStr()
     lpszStr = TEXT("callbackCnt:%d");
 }
 
-LPCWSTR GetStr() 
+
+VOID MyDrawText(HDC hdc, std::string str, LPRECT rc, UINT format)
 {
-    return lpszStr;
+    int len = strlen(str.c_str());
+    wchar_t t[128] = L"";
+    for (int i = 0; i < len; i++) 
+    {
+        t[i] = str[i];
+    }
+    DrawText(hdc, t, -1, rc, format);
 }
 
-//const char sss[] = L"hello";
+int GetCallbackCnt() { return callbackCount; }
 
-LPCTSTR GetStrr(std::string str)
-{
-    LPCTSTR ret = TEXT("hello");
-    //ret = str.c_str;
-    return ret;
-}
+
 

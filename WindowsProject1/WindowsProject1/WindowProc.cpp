@@ -39,7 +39,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
         PAINTSTRUCT ps;
         GetClientRect(hWnd, &rc);
         HDC hdc = BeginPaint(hWnd, &ps);
-        DrawText(hdc, GetStrr("ggggiii"), -1, &rc, DT_CENTER);
+        wchar_t szText[3] = L"ss";
+        int num = 5555;
+        std::string g = std::to_string(GetCallbackCnt());
+        std::string text = "jjjj1356" + g;
+        MyDrawText(hdc, text, &rc, DT_CENTER);
         EndPaint(hWnd, &ps);
     }
     break;
