@@ -1,6 +1,0 @@
-﻿  KeyHook.cpp
-  WindowProc.cpp
-C:\Users\tobita\Documents\Pelows\WindowsProject1\WindowsProject1\WindowProc.cpp(10,9): warning C4101: 'hdc': ローカル変数は 1 度も使われていません。
-C:\Users\tobita\Documents\Pelows\WindowsProject1\WindowsProject1\WindowProc.cpp(9,17): warning C4101: 'ps': ローカル変数は 1 度も使われていません。
-  コードを生成中...
-  WindowsProject1.vcxproj -> C:\Users\tobita\Documents\Pelows\WindowsProject1\Debug\WindowsProject1.exe
