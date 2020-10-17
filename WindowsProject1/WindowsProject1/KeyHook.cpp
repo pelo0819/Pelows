@@ -29,7 +29,7 @@ BOOL StartHook(HWND hWnd)
 {
     m_hWnd = hWnd;
     HINSTANCE hInst;
-    hInst = (HINSTANCE)GetWindowLongPtr(hWnd, GWL_HINSTANCE);
+    hInst = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
     //hHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)HookProc, hInst, 0);
     hHook = SetWindowsHookEx(WH_KEYBOARD, HookProc, hInst, GetCurrentThreadId());
     if (hHook == NULL)
