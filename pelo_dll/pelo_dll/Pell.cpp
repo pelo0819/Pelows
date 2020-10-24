@@ -3,7 +3,7 @@
 #include "window_manager.h"
 #include "keyboard_tracer.h"
 
-HWND hWnd = NULL;
+//HWND hWnd = NULL;
 HHOOK hHook = NULL;
 WindowManager* window_manager;
 KeyboardTracer* tracer;
@@ -72,11 +72,11 @@ void initialize()
 
 LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
+	std::cout << "hello" << std::endl;
 	if (nCode < 0)
 	{
 		return CallNextHookEx(hHook, nCode, wParam, lParam);
 	}
-
 	tracer->setLpBinary(lParam);
 
 	if (tracer->getLpBinary(0) == 1)
@@ -89,14 +89,16 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 
 void StartHook()
 {
-	if (hWnd == NULL)
+	HWND m_hWnd = window_manager->GetWindowHandle();
+	if (m_hWnd == NULL)
 	{
-		std::cout << "[!!!] window handle is null. fail to start hook.s" << std::endl;
+		std::cout << "[!!!] window handle is null. fail to start hook" << std::endl;
 		return;
 	}
-	HINSTANCE hInst;
-	hInst = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
-	hHook = SetWindowsHookEx(WH_KEYBOARD, HookProc, hInst, GetCurrentThreadId());
+	//HINSTANCE hInst;
+	//hInst = (HINSTANCE)GetWindowLongPtr(m_hWnd, GWLP_HINSTANCE);
+	//hHook = SetWindowsHookEx(WH_KEYBOARD, HookProc, hdll, GetCurrentThreadId());
+	hHook = SetWindowsHookEx(WH_KEYBOARD, HookProc, hdll, 0);
 	if (hHook == NULL)
 	{
 		std::cout << "[!!!] hook is null. fail to start hook.s" << std::endl;
