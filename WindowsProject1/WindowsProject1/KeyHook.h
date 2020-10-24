@@ -19,7 +19,11 @@ BOOL EndHook();
 VOID SetStr();
 LPCWSTR GetStr();
 LPCWSTR GetStrr(std::string);
-VOID MyDrawText(HDC, std::string, LPRECT, UINT);
+void MyDrawText(HDC, std::string, LPRECT, UINT);
+VOID MyMessageBox(std::string str);
+void RegistKeyLog(WPARAM virkey);
+std::string Keycord(WPARAM virkey);
+void Binary(int *ret, LPARAM lparam);
 int GetCallbackCnt();
 
 
