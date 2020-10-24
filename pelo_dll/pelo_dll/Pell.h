@@ -1,9 +1,8 @@
 #pragma once
+#include "pch.h"
 
-//#ifdef DLLTEST_EXPORTS
-//#define DLLTEST_API extern "C" __declspec(dllexport)
-//#else
-//#define DLLTEST_API extern "C" __declspec(dllimport)
-//#endif // DLLTEST_EXPORTS
-//
-//DLLTEST_API void Hello();
+void initialize();
+void StartHook();
+LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam);
+bool EndHook();
+

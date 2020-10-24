@@ -24,7 +24,10 @@
     <ClInclude Include="Pell.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="pelo_keyboard_helpers.h">
+    <ClInclude Include="keyboard_tracer.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="window_manager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
@@ -38,7 +41,10 @@
     <ClCompile Include="Pell.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="pelo_keyboards_helpers.cpp">
+    <ClCompile Include="keyboard_tracer.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="window_manager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
