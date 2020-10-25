@@ -5,6 +5,7 @@
 #include "WindowsProject1.h"
 #include "windows.h"
 #include "WindowProc.h"
+#include "KeyHook.h"
 
 #define MAX_LOADSTRING 100
 
@@ -49,12 +50,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     {
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
         {
+            MyMessageBox("recieve msg");
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
     }
 
-    return (int) msg.wParam;
 }
 
 
