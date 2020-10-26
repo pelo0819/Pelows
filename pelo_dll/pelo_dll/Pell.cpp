@@ -3,10 +3,10 @@
 #include "window_manager.h"
 #include "keyboard_tracer.h"
 #include <thread>
+#include <fstream>
 
 #pragma data_seg(".sharedata")
 HHOOK hHook = 0;
-bool isEnter = false;
 #pragma data_seg()
 HWND m_hWnd = 0;
 HWND hWnd = 0;
@@ -26,7 +26,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	{
 	case DLL_PROCESS_ATTACH:
 		hInst = (HINSTANCE)hModule;
-		hThread = CreateThread(NULL, 0, Thread, (LPVOID)NULL, 0, &m_thread_id);
+		// hThread = CreateThread(NULL, 0, Thread, (LPVOID)NULL, 0, &m_thread_id);
 		break;
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
@@ -120,25 +120,6 @@ void initialize()
 	}
 
 }
-//
-//extern "C" __declspec(dllexport) LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
-//{
-//	std::cout << "hello" << std::endl;
-//	tracer->registKeyLog(wParam);
-//	//MessageBoxW(m_hWnd, L"hello", TEXT("click"), MB_OK);
-//	if (nCode < 0)
-//	{ 
-//		return CallNextHookEx(hHook, nCode, wParam, lParam);
-//	}
-//	tracer->setLpBinary(lParam);
-//	if (tracer->getLpBinary(0) == 1)
-//	{
-//		tracer->registKeyLog(wParam);
-//		tracer->print_log();
-//	}
-//	return CallNextHookEx(hHook, nCode, wParam, lParam);
-//}
-
 
 LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
@@ -146,25 +127,11 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 	{
 		return CallNextHookEx(0, nCode, wParam, lParam);
 	}
-	//std::cout << "hello" << std::endl;
-	//tracer->registKeyLog(wParam);
-	
-	/*if (hWnd == NULL)
-	{
-		char buf[100];
-		GetWindowTextA(hWnd, buf, 100);
-		MyMessageBox(buf);
-	}*/
-	//SendMessage(m_hWnd, WM_KEYDOWN, wParam , lParam);
-	//PostThreadMessage(m_thread_id, WM_NULL, wParam, lParam);
-	isEnter = true;
-
-	/*tracer->setLpBinary(lParam);
-	if (tracer->getLpBinary(0) == 1)
-	{
-		tracer->registKeyLog(wParam);
-		tracer->print_log();
-	}*/
+	std::string fileName = "C:/Users/tobita/Documents/pelojan/data/test.data";
+	std::ofstream outputfile;
+	outputfile.open(fileName, std::ios::app);
+	outputfile << wParam;
+	outputfile.close();
 	return CallNextHookEx(hHook, nCode, wParam, lParam);
 }
 extern "C" __declspec(dllexport) void StartHook()
@@ -190,41 +157,21 @@ extern "C" __declspec(dllexport) void StartHook()
 
 extern "C" __declspec(dllexport) bool EndHook()
 {
-	isObserve = false;
-	tracer->print_log();
-	CloseHandle(hThread);
 	return UnhookWindowsHookEx(hHook);
-}
-
-extern "C" __declspec(dllexport) void Wait()
-{
-	std::cout << "wait" << std::endl;
-	MSG msg;
-
-	/*while (GetMessage(&msg, NULL, 0, 0))
-	{
-		std::cout << "get msg" << std::endl;
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}*/
-
-	while (isObserve)
-	{
-		if (isEnter)
-		{
-			std::cout << "get enter" << std::endl;
-			isEnter = false;
-		}
-	}
-	std::cout << "waitend" << std::endl;
-
 }
 
 DWORD WINAPI Thread(LPVOID pData)
 {
 	std::cout << "thread" << std::endl;
-	Wait();
 	return 0;
+}
+
+
+extern "C" __declspec(dllexport) void writeInput()
+{
+	std::ofstream outputfile("C:/Users/tobita/Documents/pelojan/data/test.data");
+	outputfile << "input";
+	outputfile.close();
 }
 
 
