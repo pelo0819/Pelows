@@ -127,11 +127,15 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 	{
 		return CallNextHookEx(0, nCode, wParam, lParam);
 	}
-	std::string fileName = "C:/Users/tobita/Documents/pelojan/data/test.data";
-	std::ofstream outputfile;
-	outputfile.open(fileName, std::ios::app);
-	outputfile << wParam;
-	outputfile.close();
+	int fUp = 0x40000000 & lParam;
+	if (nCode == HC_ACTION && !fUp)
+	{
+		std::string fileName = "C:/Users/tobita/Documents/pelojan/data/test.data";
+		std::ofstream outputfile;
+		outputfile.open(fileName, std::ios::app);
+		outputfile << wParam;
+		outputfile.close();
+	}
 	return CallNextHookEx(hHook, nCode, wParam, lParam);
 }
 extern "C" __declspec(dllexport) void StartHook()

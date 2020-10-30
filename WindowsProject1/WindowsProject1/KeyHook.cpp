@@ -17,19 +17,31 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
     {
         return CallNextHookEx(hHook, nCode, wParam, lParam);
     }
-
+    int fUp = 0x40000000 & lParam;
     TCHAR tcStr[128];
     const int n = 32;
     int bin[n] = {};
     Binary(bin, lParam);
 
     std::string str = "";
-    
-    if (bin[0] == 1)
+    int stloke = 0;
+    for (int i = 0; i < 16; i++)
+    {
+        stloke += bin[i];
+    }
+
+    if (nCode == HC_ACTION && !fUp)
     {
         RegistKeyLog(wParam);
         MyMessageBox(key_log);
     }
+
+    /*if (bin[0] == 1 && bin[29] == 0)
+    {
+        key_log = std::to_string(stloke);
+        RegistKeyLog(wParam);
+        MyMessageBox(key_log);
+    }*/
     callbackCount++;
     SetStr();
     InvalidateRect(m_hWnd, NULL, TRUE);
