@@ -1,6 +1,7 @@
 #include "resource.h"
 #include "WindowProc.h"
 #include "KeyHook.h"
+#include "ScreenShotter.h"
 
 int paintCnt = 0;
 
@@ -16,6 +17,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
     case WM_CREATE:
         lpszStr = TEXT("GoodBYE");
         StartHook(hWnd);
+        Shot();
         break;
     case WM_COMMAND:
     {
