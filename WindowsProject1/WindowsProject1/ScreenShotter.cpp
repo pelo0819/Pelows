@@ -10,7 +10,6 @@
 
 void Shot()
 {
-#if true
 	FILE* file = NULL;
 	fopen_s(&file, "C:/Users/tobita/Desktop/test.bmp", "wb");
 	if (file == NULL)
@@ -21,7 +20,6 @@ void Shot()
 	fputs("BM", file);
 	fclose(file);
 
-#else
 	HWND hWnd = GetDesktopWindow();
 	int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
 	int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
@@ -41,12 +39,12 @@ void Shot()
 	int g = GetGValue(ref);
 	int b = GetBValue(ref);
 	HBITMAP hBitmap = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+
 	SelectObject(hMdc, hBitmap);
 
 	BitBlt(hMdc, 0, 0, rc.right, rc.bottom, hdc, 0, 0, SRCCOPY);
 
 	DeleteDC(hdc);
-#endif
 }
 
 #if true
@@ -94,41 +92,28 @@ int makeBmpHeader(FILE* file, int x, int y)
 	// biSize 情報サイズサイズ 4byte
 	fputc4Byte(40, file);
 	// biWidth 画像の幅(ピクセル) 4byte
-	fputc4Byte(x, s);
+	fputc4Byte(x, file);
+	// biHeight 画像の高さ(ピクセル) 4byte
+	fputc4Byte(y, file);
+	// biPlanes プレーン数 2byte 常に1
+	fputc2Bytes(1, file);
+	// biBitCount 色ビット数(ビット) 2byte
+	// 24に設定、1677万色ビットマップらしい ?
+	fputc2Bytes(24, file);
+	// biCompression 圧縮方式 4byte
+	fputc4Byte(0, file);
+	// biSizeImage 画像データサイズ 4byte
+	fputc4Byte(0, file);
+	// biXPelsPerMeter 水平解像度(dot/m) 4byte
+	fputc4Byte(0, file);
+	// biYPelsPerMeter 垂直解像度(dot/m) 4byte
+	fputc4Byte(0, file);
+	// biClrUsed 格納パレット数 4byte
+	fputc4Byte(0, file);
+	// biClrImportant 重要色数 4byte
+	fputc4Byte(0, file);
 
-	/* biHeight 画像Yサイズ(dot) */
-	fputc4Byte(y, s);
-
-	/* biPlanes 面数 */
-	fputc2Bytes(1, s);
-
-	/* biBitCount 色ビット数(bit/dot) */
-	fputc2Bytes(c, s);
-
-	/* biCompression 圧縮方式 */
-	fputc4Byte(0, s);
-
-	/* biSizeImage 圧縮サイズ(byte) */
-	fputc4Byte(0, s);
-
-	/* biXPelsPerMeter 水平解像度(dot/m) */
-	fputc4Byte(0, s);
-
-	/* biYPelsPerMeter 垂直解像度(dot/m) */
-	fputc4Byte(0, s);
-
-	/* biClrUsed 色数 */
-	fputc4Byte(0, s);
-
-	/* biClrImportant 重要色数 */
-	fputc4Byte(0, s);
-
-	/* 書出失敗ならエラーでリターン */
-	if (ferror(s)) {
-		return 0;
-	}
-
-	/* 成功でリターン */
+	if (ferror(file)) { return 0; }
 	return 1;
 }
 #endif
