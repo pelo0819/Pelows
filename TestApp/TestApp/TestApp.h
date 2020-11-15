@@ -1,9 +1,5 @@
 #pragma once
 
-#define GetRValue(rgb) ((BYTE)(rgb))
-#define GetGValue(rgb) ((BYTE)(((WORD)(rgb)) >> 8))
-#define GetBValue(rgb) ((BYTE)((rgb)>>16))
-
 bool GenerateBitMapCache(HWND hw, BITMAP* bmp);
 bool GeneratePicData(unsigned char* buffer, BITMAP* bmp);
 bool GeneratePicData(unsigned char* buffer, int w, int h, HWND hw);

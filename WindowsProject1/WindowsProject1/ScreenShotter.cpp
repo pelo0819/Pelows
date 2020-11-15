@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <stdio.h>
+#include <atlimage.h>
 
 #define GetRValue(rgb) ((BYTE)(rgb))
 #define GetGValue(rgb) ((BYTE)(((WORD)(rgb)) >> 8))

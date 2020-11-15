@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <stdio.h>
+#include <atlimage.h>
 //#include <gdiplusimaging.h>
 
 #include "TestApp.h"
@@ -19,15 +20,19 @@ int main()
 
 	// 画面のサイズを取得
 	HWND hWnd = GetDesktopWindow();
-	int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-	int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+	int width = GetSystemMetrics(SM_CXSCREEN) * 1.5f;
+	int height = GetSystemMetrics(SM_CYSCREEN) * 1.5f;
 	int left = GetSystemMetrics(SM_XVIRTUALSCREEN);
 	int top = GetSystemMetrics(SM_YVIRTUALSCREEN);
-	int bmp_data_size = 3 * width * height;
+
+	RECT rc;
+	//GetClientRect(hWnd, &rc);
+	GetWindowRect(hWnd, &rc);
 
 	std::cout << "width:" << width << std::endl;
 	std::cout << "height:" << height << std::endl;
-	std::cout << "size:" << bmp_data_size << std::endl;
+
+	int bmp_data_size = 3 * width * height;
 
 	// 画像データ分のメモリを確保
 	unsigned char* pic_data;
@@ -98,25 +103,19 @@ bool GenerateBitMapCache(HWND hw, BITMAP* bmp)
 /// <param name="h"></param>
 bool GeneratePicData(unsigned char* buffer, int w, int h, HWND hw)
 {
-	HDC hdc = GetWindowDC(hw);
-	RECT rc;
-	GetClientRect(hw, &rc);
-	HBITMAP hBitmap = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
-	BITMAP bmp;
-	if (!GetObject(hBitmap, sizeof(BITMAP), &bmp))
-	{
-		std::cout << "[!!!] fail to bitmap cache" << std::endl;
-		return false;
-	}
-	else
-	{
-		std::cout << "[!!!] successful to make bitmap struct." << std::endl;
-	}
-	for (int y = 0; y < h; y++)
-	{
-		for (int x = 0; x < w; x++)
-		{
-			COLORREF ref = GetPixel(hdc, x, y);
+	CRect targetRect(0, 0, w, h);
+	HDC hdc = GetDC(hw);
+	CImage img;
+	img.Create(w, h, 24);
+	CImageDC imgDC(img);
+	/*BitBlt(imgDC, 0, 0, targetRect.Width(), targetRect.Height(),
+		hdc, targetRect.left, targetRect.top, SRCCOPY);*/
+	BitBlt(imgDC, 0, 0, w, h,
+		hdc, targetRect.left, targetRect.top, SRCCOPY);
+	ReleaseDC(hw, hdc);
+	for (int y = h-1; y >= 0; y--) {
+		for (int x = 0; x < w; x++) {
+			COLORREF ref = img.GetPixel(x, y);
 			unsigned char r = GetRValue(ref);
 			unsigned char g = GetGValue(ref);
 			unsigned char b = GetBValue(ref);
@@ -129,6 +128,7 @@ bool GeneratePicData(unsigned char* buffer, int w, int h, HWND hw)
 		}
 		std::cout << "scan monitor -> " << y << " / " << h << std::endl;
 	}
+
 	return true;
 }
 
@@ -155,7 +155,8 @@ int makeBmpHeader(FILE* file, int x, int y)
 	// パレットデータ Palette Data size [byte]
 	int sizePalletaData = 4;
 
-	bfOffBits = sizeBitmapFileHeader + sizeBitmapInfoHeaderSize + sizePalletaData;
+	//bfOffBits = sizeBitmapFileHeader + sizeBitmapInfoHeaderSize + sizePalletaData;
+	bfOffBits = sizeBitmapFileHeader + sizeBitmapInfoHeaderSize;
 
 	/// ファイルヘッダ
 	// bfType ファイルタイプ 2byte
