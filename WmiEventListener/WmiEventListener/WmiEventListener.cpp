@@ -183,6 +183,9 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 HWND g_hwndListBox = NULL;
 
+/// <summary>
+/// システム監視を行うComponent Object Model オブジェクト
+/// </summary>
 class CObjectSink :public IWbemObjectSink 
 {
 public:
@@ -268,12 +271,14 @@ STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject **ppObjAr
     // プロパティ"Caption"を指定することでプロセス名を取得するためには、
     // 一度、"TargetInstance"を指定したりして準備する必要がある(作法?)
     // https://stackoverflow.com/questions/31753518/get-process-handle-of-created-processes-windows
-    bstr = SysAllocString(L"TargetInstance"); // BSTRの初期化
-    ppObjArray[0]->Get(bstr, 0, &var, 0, 0); // 
-    // COMオブジェクトを取得
+    // BSTRの初期化
+    bstr = SysAllocString(L"TargetInstance");
+    //  ppObjArray[0]をvarにコピー
+    ppObjArray[0]->Get(bstr, 0, &var, 0, 0);
+    // COMインターフェイスを取得
     var.pdispVal->QueryInterface(IID_PPV_ARGS(&pObject));
     VariantClear(&var);
-    // プロセス名を取得
+    // COMインターフェイスからプロセス名を取得
     pObject->Get(L"Caption", 0, &var, 0, 0);
 
     SendMessage(g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
@@ -286,3 +291,7 @@ STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject **ppObjAr
     return WBEM_S_NO_ERROR;
 }
 
+STDMETHODIMP CObjectSink::SetStatus(long IFlags, HRESULT hResult, BSTR strParam, IWbemClassObject* pObjParam)
+{
+    return WBEM_S_NO_ERROR;
+}
