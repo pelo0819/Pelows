@@ -19,6 +19,31 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
+HWND g_hwndListBox = NULL;
+
+/// <summary>
+/// システム監視を行うComponent Object Model オブジェクト
+/// </summary>
+class CObjectSink :public IWbemObjectSink
+{
+public:
+    CObjectSink();
+    // STDMETHODIMP: HRESULT STDMETHODCALLTYPE
+    // HRESULT : long , 成功か失敗かだけでなく失敗した場合の理由も示す
+    // https://www.usefullcode.net/2007/03/hresult.html
+    // STDMETHODCALLTYPE : __stdcall 呼び出し規約
+    // https://www.keicode.com/winprimer/wp07b.php
+    STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject);
+    STDMETHODIMP_(ULONG) AddRef();
+    STDMETHODIMP_(ULONG) Release();
+
+    STDMETHODIMP Indicate(LONG IObjectCount, IWbemClassObject** ppObjArray);
+    STDMETHODIMP SetStatus(long IFlags, HRESULT hResult, BSTR strParam, IWbemClassObject* pObjParam);
+private:
+    LONG m_cRef;
+};
+
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -126,19 +151,105 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     static IWbemServices* pNamespace = NULL;
+    static IWbemObjectSink* pStubSink = NULL;
 
     switch (message)
     {
     case WM_CREATE:
         HRESULT hr;
-        BSTR bstrNamaspace;
-
+        BSTR bstrNamespace;
+        BSTR bstrQuery;
+        BSTR bstrLanguage;
         IWbemLocator* pLocator;
-        // 
+        IUnsecuredApartment* pUnsecApp;
+        IUnknown* pStubUnk;
+        CObjectSink* pObjectSink;
+
+
+        // アパートメントをMTAに設定
+        // https://www.kekyo.net/2013/07/22/382
         CoInitializeEx(0, COINIT_MULTITHREADED);
+
+        // WMIはDCOM(COMの改良版)を使用している。DCOMはRPCを使用していて、
+        // RPCの通信にはセキュリティ情報を指定する必要がある
+        CoInitializeSecurity(
+            NULL,
+            -1,
+            NULL,
+            NULL,
+            RPC_C_AUTHN_LEVEL_DEFAULT,
+            RPC_C_IMP_LEVEL_IMPERSONATE,
+            NULL,
+            EOAC_NONE,
+            NULL);
+
+        // COMのインスタンスを作成
+        CoCreateInstance(
+            CLSID_WbemLocator,
+            0,
+            CLSCTX_INPROC_SERVER,
+            IID_PPV_ARGS(&pLocator));
         
-        bstrNamaspace = SysAllocString(L"root\\cimv2");
-        hr = pLocator->ConnectServer(bstrNamaspace, NULL, NULL, NULL, 0, NULL, NULL, &pNamespace);
+        // 名前空間に接続してIWbemServices(pNamespace)を取得
+        bstrNamespace = SysAllocString(L"root\\cimv2");
+        hr = pLocator->ConnectServer(
+            bstrNamespace, 
+            NULL, 
+            NULL, 
+            NULL, 
+            0, 
+            NULL, 
+            NULL, 
+            &pNamespace);
+
+        if (FAILED(hr))
+        {
+            SysFreeString(bstrNamespace);
+            pLocator->Release();
+            return -1;
+        }
+
+        // pNameSpaceに個別の設定を行う(MSDNのサンプル)
+        hr = CoSetProxyBlanket(
+            pNamespace, 
+            RPC_C_AUTHN_WINNT, 
+            RPC_C_AUTHZ_NONE, 
+            NULL, 
+            RPC_C_AUTHN_LEVEL_CALL, 
+            RPC_C_IMP_LEVEL_IMPERSONATE, 
+            NULL, 
+            EOAC_NONE);
+
+        hr = CoCreateInstance(
+            CLSID_UnsecuredApartment, 
+            NULL, 
+            CLSCTX_LOCAL_SERVER, 
+            IID_PPV_ARGS(&pUnsecApp));
+
+        pObjectSink = new CObjectSink();
+        pUnsecApp->CreateObjectStub(pObjectSink, &pStubUnk);
+        pStubUnk->QueryInterface(IID_IWbemObjectSink, (void**)&pStubUnk);
+
+        bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
+        bstrLanguage = SysAllocString(L"WQL");
+
+        pNamespace->ExecNotificationQueryAsync(
+            bstrLanguage,
+            bstrQuery,
+            WBEM_FLAG_SEND_STATUS,
+            NULL,
+            pStubSink);
+
+        SysFreeString(bstrLanguage);
+        SysFreeString(bstrQuery);
+        SysFreeString(bstrNamespace);
+        pObjectSink->Release();
+        pStubUnk->Release();
+        pUnsecApp->Release();
+        pLocator->Release();
+
+        g_hwndListBox = CreateWindowEx(0, TEXT("LISTBOX"), NULL, WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hWnd, (HMENU)1, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
+
         break;
     case WM_COMMAND:
         {
@@ -166,6 +277,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_DESTROY:
+        if (pNamespace != NULL) {
+            if (pStubSink != NULL) {
+                pNamespace->CancelAsyncCall(pStubSink);
+                pStubSink->Release();
+            }
+            pNamespace->Release();
+        }
+        CoUninitialize();
         PostQuitMessage(0);
         break;
     default:
@@ -194,29 +313,6 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
-HWND g_hwndListBox = NULL;
-
-/// <summary>
-/// システム監視を行うComponent Object Model オブジェクト
-/// </summary>
-class CObjectSink :public IWbemObjectSink 
-{
-public:
-    CObjectSink();
-    // STDMETHODIMP: HRESULT STDMETHODCALLTYPE
-    // HRESULT : long , 成功か失敗かだけでなく失敗した場合の理由も示す
-    // https://www.usefullcode.net/2007/03/hresult.html
-    // STDMETHODCALLTYPE : __stdcall 呼び出し規約
-    // https://www.keicode.com/winprimer/wp07b.php
-    STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject);
-    STDMETHODIMP_(ULONG) AddRef();
-    STDMETHODIMP_(ULONG) Release();
-
-    STDMETHODIMP Indicate(LONG IObjectCount, IWbemClassObject** ppObjArray);
-    STDMETHODIMP SetStatus(long IFlags, HRESULT hResult, BSTR strParam, IWbemClassObject* pObjParam);
-private:
-    LONG m_cRef;
-};
 
 CObjectSink::CObjectSink()
 {
