@@ -6,6 +6,8 @@
 
 #include <wbemidl.h>
 
+#pragma comment (lib, "wbemuuid.lib")
+
 #define MAX_LOADSTRING 100
 
 // グローバル変数:
@@ -226,9 +228,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             CLSCTX_LOCAL_SERVER, 
             IID_PPV_ARGS(&pUnsecApp));
 
-        pObjectSink = new CObjectSink();
+        pObjectSink = new CObjectSink;
         pUnsecApp->CreateObjectStub(pObjectSink, &pStubUnk);
-        pStubUnk->QueryInterface(IID_IWbemObjectSink, (void**)&pStubUnk);
+        pStubUnk->QueryInterface(IID_IWbemObjectSink, (void**)&pStubSink);
 
         bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
         bstrLanguage = SysAllocString(L"WQL");
@@ -249,33 +251,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         pLocator->Release();
 
         g_hwndListBox = CreateWindowEx(0, TEXT("LISTBOX"), NULL, WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hWnd, (HMENU)1, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-
         break;
-    case WM_COMMAND:
-        {
-            int wmId = LOWORD(wParam);
-            // 選択されたメニューの解析:
-            switch (wmId)
-            {
-            case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
-        }
-        break;
-    case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: HDC を使用する描画コードをここに追加してください...
-            EndPaint(hWnd, &ps);
-        }
-        break;
+    case WM_SIZE:
+        MoveWindow(g_hwndListBox, 0, 0, LOWORD(lParam), HIWORD(lParam), TRUE);
+        return 0;
     case WM_DESTROY:
         if (pNamespace != NULL) {
             if (pStubSink != NULL) {
@@ -335,7 +314,10 @@ STDMETHODIMP CObjectSink::QueryInterface(REFIID riid, void** ppvObject)
     *ppvObject = NULL;
 
     // 指定したIIDとCOMオブジェクトが持つCOMインターフェイスIIDが一致するか確認
-    if (IsEqualIID(riid, IID_IUnknown)) { *ppvObject = this; }
+    if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IWbemObjectSink))
+    { 
+        *ppvObject = static_cast<IWbemObjectSink*>(this);
+    }
     else { return E_NOINTERFACE; }
 
     AddRef();
@@ -396,7 +378,6 @@ STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject **ppObjAr
     pObject->Get(L"Caption", 0, &var, 0, 0);
 
     SendMessage(g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
-
     // 開放
     SysFreeString(bstr); // BSTR
     pObject->Release(); // COMオブジェクト
