@@ -4,6 +4,8 @@
 #include "framework.h"
 #include "WmiEventListener.h"
 
+#include <wbemidl.h>
+
 #define MAX_LOADSTRING 100
 
 // グローバル変数:
@@ -178,3 +180,109 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return (INT_PTR)FALSE;
 }
+
+HWND g_hwndListBox = NULL;
+
+class CObjectSink :public IWbemObjectSink 
+{
+public:
+    // STDMETHODIMP: HRESULT STDMETHODCALLTYPE
+    // HRESULT : long , 成功か失敗かだけでなく失敗した場合の理由も示す
+    // https://www.usefullcode.net/2007/03/hresult.html
+    // STDMETHODCALLTYPE : __stdcall 呼び出し規約
+    // https://www.keicode.com/winprimer/wp07b.php
+    STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject);
+    STDMETHODIMP_(ULONG) AddRef();
+    STDMETHODIMP_(ULONG) Release();
+
+    STDMETHODIMP Indicate(LONG IObjectCount, IWbemClassObject** ppObjArray);
+    STDMETHODIMP SetStatus(long IFlags, HRESULT hResult, BSTR strParam, IWbemClassObject* pObjParam);
+
+    CObjectSink();
+private:
+    LONG m_cRef;
+};
+
+/// <summary>
+/// あるCOMオブジェクトがサポートしているCOMインターフェイスを取得
+/// COMオブジェクト:
+/// Component Object Model(COM)は、便利な機能を提供するプログラム
+/// このプログラム実行時にはメモリ上に実体が生成される
+/// 生成された実体のことをCOMオブジェクトという
+/// COMインターフェイス: COMオブジェクトを外部から利用するためのアクセス箇所
+/// </summary>
+/// <param name="riid">インターフェイスのGUID</param>
+/// <param name="ppvObject">オブジェクトのポインタのポインタ</param>
+/// <returns></returns>
+STDMETHODIMP CObjectSink::QueryInterface(REFIID riid, void** ppvObject)
+{
+    *ppvObject = NULL;
+
+    // 指定したIIDとCOMオブジェクトが持つCOMインターフェイスIIDが一致するか確認
+    if (IsEqualIID(riid, IID_IUnknown)) { *ppvObject = this; }
+    else { return E_NOINTERFACE; }
+
+    AddRef();
+
+    return S_OK;
+}
+
+/// <summary>
+/// 参照カウンタを更新する
+/// 複数スレッドでオブジェクトを操作する場合、同時に
+/// 変数を使用することを防ぐため、InterlockedIncrement()を使う
+/// </summary>
+/// <returns></returns>
+STDMETHODIMP_(ULONG) CObjectSink::AddRef()
+{
+    return InterlockedIncrement(&m_cRef);
+}
+
+/// <summary>
+/// COMオブジェクトの開放・破棄を行う
+/// </summary>
+/// <returns></returns>
+STDMETHODIMP_(ULONG) CObjectSink::Release()
+{
+    if (InterlockedDecrement(&m_cRef) == 0)
+    {
+        delete this;
+        return 0;
+    }
+    return m_cRef;
+}
+
+/// <summary>
+/// イベントが発生した場合に呼ばれる関数
+/// </summary>
+/// <param name="IObjectCount"></param>
+/// <param name="ppObjArray"></param>
+/// <returns></returns>
+STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject **ppObjArray)
+{
+    HRESULT hr;
+    VARIANT var; // 汎用型
+    BSTR bstr; //WCHAR
+    IWbemClassObject* pObject;
+
+    // プロパティ"Caption"を指定することでプロセス名を取得するためには、
+    // 一度、"TargetInstance"を指定したりして準備する必要がある(作法?)
+    // https://stackoverflow.com/questions/31753518/get-process-handle-of-created-processes-windows
+    bstr = SysAllocString(L"TargetInstance"); // BSTRの初期化
+    ppObjArray[0]->Get(bstr, 0, &var, 0, 0); // 
+    // COMオブジェクトを取得
+    var.pdispVal->QueryInterface(IID_PPV_ARGS(&pObject));
+    VariantClear(&var);
+    // プロセス名を取得
+    pObject->Get(L"Caption", 0, &var, 0, 0);
+
+    SendMessage(g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
+
+    // 開放
+    SysFreeString(bstr); // BSTR
+    pObject->Release(); // COMオブジェクト
+    VariantClear(&var); // VARIANT
+
+    return WBEM_S_NO_ERROR;
+}
+
