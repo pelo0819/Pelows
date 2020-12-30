@@ -125,8 +125,21 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    static IWbemServices* pNamespace = NULL;
+
     switch (message)
     {
+    case WM_CREATE:
+        HRESULT hr;
+        BSTR bstrNamaspace;
+
+        IWbemLocator* pLocator;
+        // 
+        CoInitializeEx(0, COINIT_MULTITHREADED);
+        
+        bstrNamaspace = SysAllocString(L"root\\cimv2");
+        hr = pLocator->ConnectServer(bstrNamaspace, NULL, NULL, NULL, 0, NULL, NULL, &pNamespace);
+        break;
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
@@ -189,6 +202,7 @@ HWND g_hwndListBox = NULL;
 class CObjectSink :public IWbemObjectSink 
 {
 public:
+    CObjectSink();
     // STDMETHODIMP: HRESULT STDMETHODCALLTYPE
     // HRESULT : long , 成功か失敗かだけでなく失敗した場合の理由も示す
     // https://www.usefullcode.net/2007/03/hresult.html
@@ -200,11 +214,14 @@ public:
 
     STDMETHODIMP Indicate(LONG IObjectCount, IWbemClassObject** ppObjArray);
     STDMETHODIMP SetStatus(long IFlags, HRESULT hResult, BSTR strParam, IWbemClassObject* pObjParam);
-
-    CObjectSink();
 private:
     LONG m_cRef;
 };
+
+CObjectSink::CObjectSink()
+{
+    m_cRef = 1;
+}
 
 /// <summary>
 /// あるCOMオブジェクトがサポートしているCOMインターフェイスを取得
@@ -276,6 +293,7 @@ STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject **ppObjAr
     //  ppObjArray[0]をvarにコピー
     ppObjArray[0]->Get(bstr, 0, &var, 0, 0);
     // COMインターフェイスを取得
+    // IID_PPV_ARGS()でIIDとCOMオブジェクトを引数に指定してくれる
     var.pdispVal->QueryInterface(IID_PPV_ARGS(&pObject));
     VariantClear(&var);
     // COMインターフェイスからプロセス名を取得
