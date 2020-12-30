@@ -233,6 +233,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         pStubUnk->QueryInterface(IID_IWbemObjectSink, (void**)&pStubSink);
 
         bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
+        //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 0.1");
         bstrLanguage = SysAllocString(L"WQL");
 
         pNamespace->ExecNotificationQueryAsync(
