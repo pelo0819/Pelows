@@ -139,12 +139,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CObjectSink.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="Params.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="WmiEventListener.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CObjectSink.cpp" />
+    <ClCompile Include="Params.cpp" />
     <ClCompile Include="WmiEventListener.cpp" />
   </ItemGroup>
   <ItemGroup>
