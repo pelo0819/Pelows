@@ -29,7 +29,8 @@ STDMETHODIMP CObjectSink::QueryInterface(REFIID riid, void** ppvObject)
     else { return E_NOINTERFACE; }
 
     AddRef();
-
+    /*MessageBox(NULL, TEXT("[OK] が押されました。"),
+        TEXT("スタブが作成された"), MB_ICONINFORMATION);*/
     return S_OK;
 }
 

@@ -172,6 +172,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             IID_PPV_ARGS(&pLocator));
         
         // 名前空間に接続してIWbemServices(pNamespace)を取得
+        // IWbemServicesからWMIにアクセスできる
         bstrNamespace = SysAllocString(L"root\\cimv2");
         hr = pLocator->ConnectServer(
             bstrNamespace, 
@@ -201,6 +202,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             NULL, 
             EOAC_NONE);
 
+        // 下記で述べるスタブの作成
+        // スタブを作成するには、CreateObjectStub()を実行する必要がある
+        // CreateObjectStub()へのアクセスは、IUnsecuredApartment(pUnsecApp)から可能
+        // 第1引数をCLSID_UnsecuredApartmentとしてCoCreateInstance()を実行すると
+        // IUnsecuredApartmentを取得できる
         hr = CoCreateInstance(
             CLSID_UnsecuredApartment, 
             NULL, 
@@ -211,10 +217,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         pUnsecApp->CreateObjectStub(pObjectSink, &pStubUnk);
         pStubUnk->QueryInterface(IID_IWbemObjectSink, (void**)&pStubSink);
 
-        //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
-        bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 0.1 WHERE TargetInstance ISA 'CIM_CreateDirectoryAction'");
+        // 取得したいイベントのクエリを定義
+        bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
+        
+        
+        //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceOperationEvent WITHIN 1 WHERE TargetInstance ISA 'CIM_DataFile' AND TargetInstance.Drive='C:' AND TargetInstance.Path='\\\\Users\\\\tobita\\\\Desktop\\\\' AND TargetInstance.Extension='txt'");
+        //bstrQuery = SysAllocString(L"SELECT * FROM Win32_PingStatus WHERE Address = '192.168.3.9'");
+        //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceOperationEvent  WITHIN 1 WHERE TargetInstance ISA 'Win32_PingStatus' AND TargetInstance.Address = '192.168.3.9'");
+
         bstrLanguage = SysAllocString(L"WQL");
 
+        // イベントが発生した場合、IWbemObjectSink(pStubSink)に通知がいくように設定
+        // 第5引数は、CObjectSinkオブジェクトを入れるわけではなく、スタブを入れないとだめらしい
+        // イベントの通知はプロバイダが行うので、クライアントで定義したCObjectSinkクラスのこと知らないから
         hr =pNamespace->ExecNotificationQueryAsync(
             bstrLanguage,
             bstrQuery,
@@ -224,8 +239,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         if (FAILED(hr))
         {
-            MessageBox(NULL, TEXT("[OK] が押されました。"),
-                TEXT("結果"), MB_ICONINFORMATION);
+            MessageBox(NULL, TEXT("[!!!] Failed ExecNotificationQueryAsync"),
+                TEXT("FAIL"), MB_ICONINFORMATION);
         }
 
         SysFreeString(bstrLanguage);
@@ -235,7 +250,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         pStubUnk->Release();
         pUnsecApp->Release();
         pLocator->Release();
-
 
         Params::g_hwndListBox = CreateWindowEx(0, TEXT("LISTBOX"), NULL, WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hWnd, (HMENU)1, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
         break;
