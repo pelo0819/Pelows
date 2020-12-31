@@ -211,16 +211,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         pUnsecApp->CreateObjectStub(pObjectSink, &pStubUnk);
         pStubUnk->QueryInterface(IID_IWbemObjectSink, (void**)&pStubSink);
 
-        bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
-        //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 0.1");
+        //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
+        bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 0.1 WHERE TargetInstance ISA 'CIM_CreateDirectoryAction'");
         bstrLanguage = SysAllocString(L"WQL");
 
-        pNamespace->ExecNotificationQueryAsync(
+        hr =pNamespace->ExecNotificationQueryAsync(
             bstrLanguage,
             bstrQuery,
             WBEM_FLAG_SEND_STATUS,
             NULL,
             pStubSink);
+
+        if (FAILED(hr))
+        {
+            MessageBox(NULL, TEXT("[OK] が押されました。"),
+                TEXT("結果"), MB_ICONINFORMATION);
+        }
 
         SysFreeString(bstrLanguage);
         SysFreeString(bstrQuery);
