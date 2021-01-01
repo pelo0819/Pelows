@@ -81,20 +81,16 @@ STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject** ppObjAr
     // https://stackoverflow.com/questions/31753518/get-process-handle-of-created-processes-windows
     // BSTRの初期化
     bstr = SysAllocString(L"TargetInstance");
+    
     //  ppObjArray[0]をvarにコピー
     ppObjArray[0]->Get(bstr, 0, &var, 0, 0);
+    
     // COMインターフェイスを取得
     // IID_PPV_ARGS()でIIDとCOMオブジェクトを引数に指定してくれる
     var.pdispVal->QueryInterface(IID_PPV_ARGS(&pObject));
     VariantClear(&var);
-    // COMインターフェイスからプロセス名を取得
-    //pObject->Get(L"Address", 0, &var, 0, 0);
-    /*pObject->Get(L"Caption", 0, &var, 0, 0);
-    SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
     
-    pObject->Get(L"ExecutionState", 0, &var, 0, 0);
-    SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);*/
-
+    // COMインターフェイスからプロセスの諸々情報を取得
     pObject->Get(L"Name", 0, &var, 0, 0);
     SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
 
@@ -117,7 +113,10 @@ STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject** ppObjAr
         util = new PeloUtils();
         util->SetProcessInfo(var.ulVal);
         MyMessageBox(util->GetAll());
-
+    }
+    else
+    {
+        MyMessageBox("[!!!] FAIL!!!!");
     }
 
     pObject->Get(L"ExecutablePath", 0, &var, 0, 0);
@@ -126,6 +125,8 @@ STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject** ppObjAr
     // 開放
     SysFreeString(bstr); // BSTR
     pObject->Release(); // COMオブジェクト
+    VariantClear(&var);
+
     return WBEM_S_NO_ERROR;
 }
 
@@ -138,6 +139,7 @@ VOID CObjectSink::MyMessageBox(std::string str)
 {
     int len = strlen(str.c_str());
     wchar_t t[128] = L"";
+    if (len > 128) { len = 128; }
     for (int i = 0; i < len; i++)
     {
         t[i] = str[i];
