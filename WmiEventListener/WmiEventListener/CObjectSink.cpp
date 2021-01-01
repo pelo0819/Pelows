@@ -1,4 +1,7 @@
 #include "CObjectSink.h"
+#include "PeloUtils.h"
+#include <string>
+#include <stdio.h>
 //#include "Params.h"
 
 CObjectSink::CObjectSink()
@@ -71,6 +74,7 @@ STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject** ppObjAr
     VARIANT var; // 汎用型
     BSTR bstr; //WCHAR
     IWbemClassObject* pObject;
+    
 
     // プロパティ"Caption"を指定することでプロセス名を取得するためには、
     // 一度、"TargetInstance"を指定したりして準備する必要がある(作法?)
@@ -84,20 +88,61 @@ STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject** ppObjAr
     var.pdispVal->QueryInterface(IID_PPV_ARGS(&pObject));
     VariantClear(&var);
     // COMインターフェイスからプロセス名を取得
-    pObject->Get(L"Caption", 0, &var, 0, 0);
-
+    //pObject->Get(L"Address", 0, &var, 0, 0);
+    /*pObject->Get(L"Caption", 0, &var, 0, 0);
     SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
+    
+    pObject->Get(L"ExecutionState", 0, &var, 0, 0);
+    SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);*/
+
+    pObject->Get(L"Name", 0, &var, 0, 0);
+    SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
+
+    hr = pObject->Get(L"ProcessId", 0, &var, 0, 0);
+    if (SUCCEEDED(hr))
+    {
+        BSTR tmp;
+        std::string str;
+        str = std::to_string(var.ulVal);
+        int len = strlen(str.c_str());
+        wchar_t t[128] = L"";
+        for (int i = 0; i < len; i++)
+        {
+            t[i] = str[i];
+        }
+        tmp = SysAllocString(t);
+        SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)tmp);
+
+        PeloUtils* util;
+        util = new PeloUtils();
+        util->SetProcessInfo(var.ulVal);
+        MyMessageBox(util->GetAll());
+
+    }
+
+    pObject->Get(L"ExecutablePath", 0, &var, 0, 0);
+    SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
+    //
     // 開放
     SysFreeString(bstr); // BSTR
     pObject->Release(); // COMオブジェクト
-    VariantClear(&var); // VARIANT
-
     return WBEM_S_NO_ERROR;
 }
 
 STDMETHODIMP CObjectSink::SetStatus(long IFlags, HRESULT hResult, BSTR strParam, IWbemClassObject* pObjParam)
 {
     return WBEM_S_NO_ERROR;
+}
+
+VOID CObjectSink::MyMessageBox(std::string str)
+{
+    int len = strlen(str.c_str());
+    wchar_t t[128] = L"";
+    for (int i = 0; i < len; i++)
+    {
+        t[i] = str[i];
+    }
+    MessageBoxW(NULL, t, TEXT("click"), MB_OK);
 }
 
 

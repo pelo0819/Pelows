@@ -131,8 +131,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    static IWbemServices* pNamespace = NULL;
-    static IWbemObjectSink* pStubSink = NULL;
+
+    //static IWbemServices* pNamespace = NULL;
+    //static IWbemObjectSink* pStubSink = NULL;
 
     switch (message)
     {
@@ -182,7 +183,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             0, 
             NULL, 
             NULL, 
-            &pNamespace);
+            &Params::pNamespace);
 
         if (FAILED(hr))
         {
@@ -193,7 +194,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         // pNameSpaceに個別の設定を行う(MSDNのサンプル)
         hr = CoSetProxyBlanket(
-            pNamespace, 
+            Params::pNamespace,
             RPC_C_AUTHN_WINNT, 
             RPC_C_AUTHZ_NONE, 
             NULL, 
@@ -215,27 +216,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         pObjectSink = new CObjectSink;
         pUnsecApp->CreateObjectStub(pObjectSink, &pStubUnk);
-        pStubUnk->QueryInterface(IID_IWbemObjectSink, (void**)&pStubSink);
+        pStubUnk->QueryInterface(IID_IWbemObjectSink, (void**)&Params::pStubSink);
 
         // 取得したいイベントのクエリを定義
         bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
-        
-        
         //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceOperationEvent WITHIN 1 WHERE TargetInstance ISA 'CIM_DataFile' AND TargetInstance.Drive='C:' AND TargetInstance.Path='\\\\Users\\\\tobita\\\\Desktop\\\\' AND TargetInstance.Extension='txt'");
-        //bstrQuery = SysAllocString(L"SELECT * FROM Win32_PingStatus WHERE Address = '192.168.3.9'");
-        //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceOperationEvent  WITHIN 1 WHERE TargetInstance ISA 'Win32_PingStatus' AND TargetInstance.Address = '192.168.3.9'");
+        //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceOperationEvent  WITHIN 1 WHERE TargetInstance ISA 'Win32_PingStatus' AND TargetInstance.Address = '192.168.3.5'");
 
         bstrLanguage = SysAllocString(L"WQL");
 
         // イベントが発生した場合、IWbemObjectSink(pStubSink)に通知がいくように設定
         // 第5引数は、CObjectSinkオブジェクトを入れるわけではなく、スタブを入れないとだめらしい
         // イベントの通知はプロバイダが行うので、クライアントで定義したCObjectSinkクラスのこと知らないから
-        hr =pNamespace->ExecNotificationQueryAsync(
+        hr = Params::pNamespace->ExecNotificationQueryAsync(
             bstrLanguage,
             bstrQuery,
             WBEM_FLAG_SEND_STATUS,
             NULL,
-            pStubSink);
+            Params::pStubSink);
 
         if (FAILED(hr))
         {
@@ -257,12 +255,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         MoveWindow(Params::g_hwndListBox, 0, 0, LOWORD(lParam), HIWORD(lParam), TRUE);
         return 0;
     case WM_DESTROY:
-        if (pNamespace != NULL) {
-            if (pStubSink != NULL) {
-                pNamespace->CancelAsyncCall(pStubSink);
-                pStubSink->Release();
+        if (Params::pNamespace != NULL) {
+            if (Params::pStubSink != NULL) {
+                Params::pNamespace->CancelAsyncCall(Params::pStubSink);
+                Params::pStubSink->Release();
             }
-            pNamespace->Release();
+            Params::pNamespace->Release();
         }
         CoUninitialize();
         PostQuitMessage(0);

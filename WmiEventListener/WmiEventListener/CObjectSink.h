@@ -2,6 +2,8 @@
 #include <wbemidl.h>
 #include "framework.h"
 #include "Params.h"
+#include <string>
+
 /// <summary>
 /// システム監視を行うComponent Object Model オブジェクト
 /// </summary>
@@ -20,6 +22,7 @@ public:
 
     STDMETHODIMP Indicate(LONG IObjectCount, IWbemClassObject** ppObjArray);
     STDMETHODIMP SetStatus(long IFlags, HRESULT hResult, BSTR strParam, IWbemClassObject* pObjParam);
+    VOID MyMessageBox(std::string str);
 private:
     LONG m_cRef;
 };
