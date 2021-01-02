@@ -92,40 +92,30 @@ STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject** ppObjAr
     VariantClear(&var);
 
     // COMインターフェイスからプロセスの諸々情報を取得
-    pObject->Get(L"Name", 0, &var, 0, 0);
-    //SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
+    hr = pObject->Get(L"ExecutablePath", 0, &var, 0, 0);
+    if (FAILED(hr))
+    {
+        std::cout << "[!!!] failed Get ExecutablePath" << std::endl;
+    }
+    BSTR name;
+    name = SysAllocString(var.bstrVal);
+    ProcessWatcher* watch;
+    watch = new ProcessWatcher(name);
 
     hr = pObject->Get(L"ProcessId", 0, &var, 0, 0);
     if (SUCCEEDED(hr))
     {
-        BSTR tmp;
-        std::string str;
-        str = std::to_string(var.ulVal);
-        int len = strlen(str.c_str());
-        wchar_t t[128] = L"";
-        for (int i = 0; i < len; i++)
-        {
-            t[i] = str[i];
-        }
-        tmp = SysAllocString(t);
-        //SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)tmp);
-
-        ProcessWatcher* watch;
-        watch = new ProcessWatcher();
         watch->SetProcessInfo(var.ulVal);
-        std::cout << watch->GetAll() << std::endl;
-        MyMessageBox(watch->GetAll());
     }
     else
     {
-        std::cout << "[!!!] Failed Get ProcessId" << std::endl;
+        std::cout << "[!!!] failed Get ProcessId" << std::endl;
     }
+    std::cout << watch->GetAll() << std::endl;
 
-    pObject->Get(L"ExecutablePath", 0, &var, 0, 0);
-    //SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
-    //
     // 開放
     SysFreeString(bstr); // BSTR
+    SysFreeString(name); // BSTR
     pObject->Release(); // COMオブジェクト
     VariantClear(&var);
 

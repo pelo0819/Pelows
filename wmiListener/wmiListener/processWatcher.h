@@ -1,14 +1,17 @@
 #pragma once
+#include <wbemidl.h>
 #include <string>
+#include <atlstr.h>
 
 class ProcessWatcher
 {
 public:
-	ProcessWatcher();
+	ProcessWatcher(BSTR name);
 	bool SetProcessInfo(unsigned long pId);
 	bool SetDomainAndName(unsigned long pId);
 	bool SetPrivilege(unsigned long pId);
 	unsigned long GetPid();
+	std::string GetName();
 	std::string GetPidStr();
 	std::string GetDomain();
 	std::string GetProcessUserName();
@@ -18,6 +21,7 @@ public:
 	std::string GetAll();
 private:
 	unsigned long pid = 0;
+	std::string name = "";
 	std::string pidStr = "";
 	std::string domain = "";
 	std::string userName = "";

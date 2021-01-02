@@ -4,7 +4,10 @@
 /// <summary>
 /// Constructor
 /// </summary>
-ProcessWatcher::ProcessWatcher() {}
+ProcessWatcher::ProcessWatcher(BSTR n) 
+{
+	name = CStringA(n).GetBuffer();
+}
 
 /// <summary>
 /// 指定したプロセスIDからドメイン名、ユーザー名を設定する
@@ -39,7 +42,7 @@ bool ProcessWatcher::SetDomainAndName(unsigned long pid)
 
 	if (hProc == NULL)
 	{
-		errLog = "[!!!] Failed OpenProcess()";
+		errLog = "[!!!] failed OpenProcess()";
 		std::cout << errLog << std::endl;
 		return false;
 	}
@@ -47,7 +50,7 @@ bool ProcessWatcher::SetDomainAndName(unsigned long pid)
 	// プロセスのトークンを取得
 	if (!OpenProcessToken(hProc, TOKEN_QUERY, &hToken))
 	{
-		errLog = "[!!!] Failed OpenProcessToken()";
+		errLog = "[!!!] failed OpenProcessToken()";
 		std::cout << errLog << std::endl;
 		CloseHandle(hToken);
 		CloseHandle(hProc);
@@ -61,7 +64,7 @@ bool ProcessWatcher::SetDomainAndName(unsigned long pid)
 	{
 		CloseHandle(hToken);
 		CloseHandle(hProc);
-		errLog = "[!!!] Failed GetTokenInformation(), TokenUser";
+		errLog = "[!!!] failed GetTokenInformation(), TokenUser";
 		std::cout << errLog << std::endl;
 		return false;
 	}
@@ -106,7 +109,7 @@ bool ProcessWatcher::SetPrivilege(unsigned long pid)
 
 	if (hProc == NULL)
 	{
-		errLog = "[!!!] Failed OpenProcess()";
+		errLog = "[!!!] failed OpenProcess()";
 		std::cout << errLog << std::endl;
 		return false;
 	}
@@ -114,7 +117,7 @@ bool ProcessWatcher::SetPrivilege(unsigned long pid)
 	// プロセスのトークンを取得
 	if (!OpenProcessToken(hProc, TOKEN_QUERY, &hToken))
 	{
-		errLog = "[!!!] Failed OpenProcessToken()";
+		errLog = "[!!!] failed OpenProcessToken()";
 		std::cout << errLog << std::endl;
 		CloseHandle(hToken);
 		CloseHandle(hProc);
@@ -125,7 +128,7 @@ bool ProcessWatcher::SetPrivilege(unsigned long pid)
 
 	pTokenPrivileges = (PTOKEN_PRIVILEGES)LocalAlloc(LPTR, dwLength);
 	if (pTokenPrivileges == NULL) {
-		errLog = "[!!!] Failed LocalAlloc()";
+		errLog = "[!!!] failed LocalAlloc()";
 		std::cout << errLog << std::endl;
 		CloseHandle(hToken);
 		LocalFree(pTokenPrivileges);
@@ -160,6 +163,7 @@ bool ProcessWatcher::SetPrivilege(unsigned long pid)
 
 
 unsigned long ProcessWatcher::GetPid() { return pid; }
+std::string ProcessWatcher::GetName() { return name; }
 std::string ProcessWatcher::GetPidStr()
 {
 	pidStr = std::to_string(pid);
@@ -173,6 +177,7 @@ std::string ProcessWatcher::GetPrivilege() { return privilege; }
 std::string ProcessWatcher::GetAll()
 {
 	allInfo = "pid:" + GetPidStr() +
+		" name:" + GetName() +
 		" user:" + GetDomain() + "/" + GetProcessUserName() +
 		" privilege: " + GetPrivilege();
 	return allInfo;

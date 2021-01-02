@@ -29,9 +29,7 @@ static IWbemObjectSink* pStubSink = NULL;
 
 extern "C" __declspec(dllexport) bool init()
 {
-    std::cout << "hello" << std::endl;
-
-    MessageBoxW(NULL, TEXT("hello"), TEXT("click"), MB_OK);
+    std::cout << "[*] start to inialize process watcher." << std::endl;
 
     HRESULT hr;
     BSTR bstrNamespace;
@@ -45,10 +43,7 @@ extern "C" __declspec(dllexport) bool init()
     // アパートメントをMTAに設定
     // https://www.kekyo.net/2013/07/22/382
     hr = CoInitializeEx(0, COINIT_MULTITHREADED);
-    if (FAILED(hr)) { std::cout << "[!!!] Failed CoInitializeEx()" << std::endl; }
-
-    MessageBoxW(NULL, TEXT("step1"), TEXT("click"), MB_OK);
-
+    if (FAILED(hr)) { std::cout << "[!!!] failed CoInitializeEx()" << std::endl; }
 
     // WMIはDCOM(COMの改良版)を使用している。DCOMはRPCを使用していて、
     // RPCの通信にはセキュリティ情報を指定する必要がある
@@ -62,10 +57,7 @@ extern "C" __declspec(dllexport) bool init()
         NULL,
         EOAC_NONE,
         NULL);
-    if (FAILED(hr)) { std::cout << "[!!!] Failed CoInitializeSecurity()" << std::endl; }
-
-    MessageBoxW(NULL, TEXT("step2"), TEXT("click"), MB_OK);
-
+    if (FAILED(hr)) { std::cout << "[!!!] failed CoInitializeSecurity()" << std::endl; }
 
     // COMのインスタンスを作成
     hr = CoCreateInstance(
@@ -73,10 +65,7 @@ extern "C" __declspec(dllexport) bool init()
         0,
         CLSCTX_INPROC_SERVER,
         IID_PPV_ARGS(&pLocator));
-    if (FAILED(hr)) { std::cout << "[!!!] Failed CoCreateInstance()" << std::endl; }
-
-    MessageBoxW(NULL, TEXT("step3"), TEXT("click"), MB_OK);
-
+    if (FAILED(hr)) { std::cout << "[!!!] failed CoCreateInstance()" << std::endl; }
 
     // 名前空間に接続してIWbemServices(pNamespace)を取得
     // IWbemServicesからWMIにアクセスできる
@@ -93,14 +82,11 @@ extern "C" __declspec(dllexport) bool init()
 
     if (FAILED(hr))
     {
-        std::cout << "[!!!] Failed ConnectServer()" << std::endl;
+        std::cout << "[!!!] failed ConnectServer()" << std::endl;
         SysFreeString(bstrNamespace);
         pLocator->Release();
         return false;
     }
-
-    MessageBoxW(NULL, TEXT("step4"), TEXT("click"), MB_OK);
-
 
     // pNameSpaceに個別の設定を行う(MSDNのサンプル)
     hr = CoSetProxyBlanket(
@@ -128,8 +114,6 @@ extern "C" __declspec(dllexport) bool init()
     pUnsecApp->CreateObjectStub(pObjectSink, &pStubUnk);
     pStubUnk->QueryInterface(IID_IWbemObjectSink, (void**)&pStubSink);
 
-    MessageBoxW(NULL, TEXT("step5"), TEXT("click"), MB_OK);
-
     // 取得したいイベントのクエリを定義
     bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
     //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceOperationEvent WITHIN 1 WHERE TargetInstance ISA 'CIM_DataFile' AND TargetInstance.Drive='C:' AND TargetInstance.Path='\\\\Users\\\\tobita\\\\Desktop\\\\' AND TargetInstance.Extension='txt'");
@@ -139,14 +123,6 @@ extern "C" __declspec(dllexport) bool init()
     // イベントが発生した場合、IWbemObjectSink(pStubSink)に通知がいくように設定
     // 第5引数は、CObjectSinkオブジェクトを入れるわけではなく、スタブを入れないとだめらしい
     // イベントの通知はプロバイダが行うので、クライアントで定義したCObjectSinkクラスのこと知らないから
-    MessageBoxW(NULL, TEXT("step8"), TEXT("click"), MB_OK);
-
-
-    if (pNamespace == NULL)
-    {
-        MessageBoxW(NULL, TEXT("name null"), TEXT("click"), MB_OK);
-    }
-
     hr = pNamespace->ExecNotificationQueryAsync(
         bstrLanguage,
         bstrQuery,
@@ -156,11 +132,8 @@ extern "C" __declspec(dllexport) bool init()
 
     if (FAILED(hr))
     {
-        std::cout << "[!!!] Failed ExecNotificationQueryAsync()" << std::endl;
+        std::cout << "[!!!] failed ExecNotificationQueryAsync()" << std::endl;
     }
-
-    MessageBoxW(NULL, TEXT("step6"), TEXT("click"), MB_OK);
-
 
     SysFreeString(bstrLanguage);
     SysFreeString(bstrQuery);
@@ -170,9 +143,7 @@ extern "C" __declspec(dllexport) bool init()
     pUnsecApp->Release();
     pLocator->Release();
     
-    std::cout << "[*] Success Starting Process Watch" << std::endl;
-    
-    MessageBoxW(NULL, TEXT("success"), TEXT("click"), MB_OK);
+    std::cout << "[*] success  to start process watcher" << std::endl;
     
     return true;
 }
