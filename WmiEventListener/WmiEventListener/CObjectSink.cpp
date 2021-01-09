@@ -94,33 +94,48 @@ STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject** ppObjAr
     pObject->Get(L"Name", 0, &var, 0, 0);
     SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
 
-    hr = pObject->Get(L"ProcessId", 0, &var, 0, 0);
-    if (SUCCEEDED(hr))
-    {
-        BSTR tmp;
-        std::string str;
-        str = std::to_string(var.ulVal);
-        int len = strlen(str.c_str());
-        wchar_t t[128] = L"";
-        for (int i = 0; i < len; i++)
-        {
-            t[i] = str[i];
-        }
-        tmp = SysAllocString(t);
-        SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)tmp);
-
-        PeloUtils* util;
-        util = new PeloUtils();
-        util->SetProcessInfo(var.ulVal);
-        MyMessageBox(util->GetAll());
-    }
-    else
-    {
-        MyMessageBox("[!!!] FAIL!!!!");
-    }
-
-    pObject->Get(L"ExecutablePath", 0, &var, 0, 0);
+    //pObject->Get(L"Path", 0, &var, 0, 0);
+    //SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
+    //pObject->Get(L"FileType", 0, &var, 0, 0);
+    //SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
+    //pObject->Get(L"FSName", 0, &var, 0, 0);
+    //SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
+    //pObject->Get(L"Description", 0, &var, 0, 0);
+    //SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
+    //
+    pObject->Get(L"Version", 0, &var, 0, 0);
     SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
+
+
+
+    //hr = pObject->Get(L"ProcessId", 0, &var, 0, 0);
+    //if (SUCCEEDED(hr))
+    //{
+    //    BSTR tmp;
+    //    std::string str;
+    //    str = std::to_string(var.ulVal);
+    //    int len = strlen(str.c_str());
+    //    wchar_t t[128] = L"";
+    //    for (int i = 0; i < len; i++)
+    //    {
+    //        t[i] = str[i];
+    //    }
+    //    tmp = SysAllocString(t);
+    //    SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)tmp);
+
+    //    PeloUtils* util;
+    //    util = new PeloUtils();
+    //    util->SetProcessInfo(var.ulVal);
+    //    MyMessageBox(util->GetAll());
+    //}
+    //else
+    //{
+    //    MyMessageBox("[!!!] FAIL!!!!");
+    //}
+
+    //pObject->Get(L"ExecutablePath", 0, &var, 0, 0);
+    //SendMessage(Params::g_hwndListBox, LB_ADDSTRING, 0, (LPARAM)var.bstrVal);
+    //
     //
     // ŠJ•ú
     SysFreeString(bstr); // BSTR

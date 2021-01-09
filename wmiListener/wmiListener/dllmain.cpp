@@ -1,9 +1,11 @@
 ﻿#include "pch.h"
 #include <wbemidl.h>
 #include "cObjectSink.h"
+#include "myParams.h"
 
 
 #pragma comment (lib, "wbemuuid.lib")
+
 
 #pragma region 作法  
 BOOL APIENTRY DllMain(HMODULE hModule,
@@ -14,6 +16,8 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
+        MyParams::hInst = (HINSTANCE)hModule;
+        break;
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:
@@ -143,13 +147,14 @@ extern "C" __declspec(dllexport) bool init()
     pUnsecApp->Release();
     pLocator->Release();
     
-    std::cout << "[*] success  to start process watcher" << std::endl;
+    std::cout << "[*] success  to start process watcher." << std::endl;
     
     return true;
 }
 
 extern "C" __declspec(dllexport) void end()
 {
+    std::cout << "[*] end process watcher." << std::endl;
     if (pNamespace != NULL) {
         if (pStubSink != NULL) {
             pNamespace->CancelAsyncCall(pStubSink);

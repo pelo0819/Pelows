@@ -3,6 +3,8 @@
 #include "processWatcher.h"
 #include <string>
 #include <stdio.h>
+#include <time.h>
+
 //#include "Params.h"
 
 CObjectSink::CObjectSink()
@@ -91,34 +93,39 @@ STDMETHODIMP CObjectSink::Indicate(LONG IObjectCount, IWbemClassObject** ppObjAr
     var.pdispVal->QueryInterface(IID_PPV_ARGS(&pObject));
     VariantClear(&var);
 
+    ProcessWatcher* watch;
+    watch = new ProcessWatcher();
+
     // COMインターフェイスからプロセスの諸々情報を取得
     hr = pObject->Get(L"ExecutablePath", 0, &var, 0, 0);
     if (FAILED(hr))
     {
-        std::cout << "[!!!] failed Get ExecutablePath" << std::endl;
+        watch->setErrorLog("[!!!] failed Get ExecutablePath");
     }
-    BSTR name;
-    name = SysAllocString(var.bstrVal);
-    ProcessWatcher* watch;
-    watch = new ProcessWatcher(name);
+    watch->setName(var.bstrVal);
+
+    hr = pObject->Get(L"CommandLine", 0, &var, 0, 0);
+    if (FAILED(hr))
+    {
+        watch->setErrorLog("[!!!] failed Get CommandLine");
+    }
+    watch->setCommandLine(var.bstrVal);
 
     hr = pObject->Get(L"ProcessId", 0, &var, 0, 0);
     if (SUCCEEDED(hr))
     {
-        watch->SetProcessInfo(var.ulVal);
+        watch->setProcessInfo(var.ulVal);
     }
     else
     {
-        std::cout << "[!!!] failed Get ProcessId" << std::endl;
+        watch->setErrorLog("[!!!] failed Get ProcessId");
     }
-    std::cout << watch->GetAll() << std::endl;
-
+    watch->writeKeyLog();
     // 開放
     SysFreeString(bstr); // BSTR
-    SysFreeString(name); // BSTR
     pObject->Release(); // COMオブジェクト
     VariantClear(&var);
-
+    delete watch;
     return WBEM_S_NO_ERROR;
 }
 
@@ -138,3 +145,4 @@ VOID CObjectSink::MyMessageBox(std::string str)
     }
     MessageBoxW(NULL, t, TEXT("click"), MB_OK);
 }
+

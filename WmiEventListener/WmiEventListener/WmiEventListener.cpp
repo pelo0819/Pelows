@@ -219,8 +219,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         pStubUnk->QueryInterface(IID_IWbemObjectSink, (void**)&Params::pStubSink);
 
         // 取得したいイベントのクエリを定義
-        bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
-        //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceOperationEvent WITHIN 1 WHERE TargetInstance ISA 'CIM_DataFile' AND TargetInstance.Drive='C:' AND TargetInstance.Path='\\\\Users\\\\tobita\\\\Desktop\\\\' AND TargetInstance.Extension='txt'");
+        //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
+        bstrQuery = SysAllocString(L"SELECT * FROM __InstanceOperationEvent WITHIN 1 WHERE TargetInstance ISA 'CIM_DataFile' AND TargetInstance.Drive='C:' AND TargetInstance.Path='\\\\Users\\\\tobita\\\\test\\\\' AND TargetInstance.Extension='txt'");
         //bstrQuery = SysAllocString(L"SELECT * FROM __InstanceOperationEvent  WITHIN 1 WHERE TargetInstance ISA 'Win32_PingStatus' AND TargetInstance.Address = '192.168.3.5'");
 
         bstrLanguage = SysAllocString(L"WQL");

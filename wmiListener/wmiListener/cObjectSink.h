@@ -1,6 +1,7 @@
 #pragma once
 #include <wbemidl.h>
 #include <string>
+#include "MyParams.h"
 
 /// <summary>
 /// システム監視を行うComponent Object Model オブジェクト
