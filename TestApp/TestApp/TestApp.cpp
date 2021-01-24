@@ -11,7 +11,7 @@
 int main()
 {
 	FILE* file = NULL;
-	fopen_s(&file, "C:/Users/tobita/Desktop/test.bmp", "wb");
+	fopen_s(&file, "C:/Users/tobita/Documents/test.bmp", "wb");
 	if (file == NULL)
 	{
 		std::cout << "[!!!] error open file." << std::endl;
