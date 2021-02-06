@@ -47,7 +47,7 @@ void writeLog(std::string str)
 int main()
 {
     // UAC機能を回避する方法を入れないとダメな場合が多い
-    const wchar_t* dirName = L"C:\\Windows\\Temp";
+    const wchar_t* dirName = L"C:\\Windows\\System32";
     //const wchar_t* dirName = L"C:\\Users\\tobita\\test";
 
     HANDLE hDir = CreateFileW(
