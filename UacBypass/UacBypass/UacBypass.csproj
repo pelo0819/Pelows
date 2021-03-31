@@ -1,9 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+  https://www.fenet.jp/dotnet/column/tool/1681/
+  https://noxi515.hateblo.jp/entry/2020/07/19/173405
+  -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 
   <ItemGroup>

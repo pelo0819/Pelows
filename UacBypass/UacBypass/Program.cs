@@ -9,11 +9,14 @@ namespace UacBypass
     {
         static void Main(string[] args)
         {
-#if false
-            string cont = "Good Morning";
-            File.WriteAllText(@"C:\Windows\System32\test_2\test3.txt", cont);
+#if true
+
+            //string cont = "Good Morning";
+            //File.WriteAllText(@"C:\Windows\System32\test_2\test3.txt", cont);
             Console.WriteLine("Hello World!");
-#endif
+
+#else
+            Console.ReadKey();
             var path = "SOFTWARE\\Microsoft\\Windows\\Notepad\\Capabilities";
             RegistryKey key = Registry.LocalMachine.OpenSubKey(path);
             //Console.WriteLine(key.GetValue("ApplicationName"));
@@ -33,6 +36,8 @@ namespace UacBypass
             key.SetValue("TestName", "TestValue");
 
             key.Close();
+            Console.ReadKey();
+#endif
         }
     }
 }
